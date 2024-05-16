@@ -1,0 +1,176 @@
+
+//skapar variabler
+let grid;
+const cellSize = 10;
+const cols = 60;
+const rows = 60;
+let sand = 2;
+let water = 3;
+let rock = 1;
+let blocks = 4;
+
+function setup() {
+  createCanvas(cols * cellSize, rows * cellSize);
+  grid = createEmptyGrid(cols, rows);
+}
+
+//fyller i allt/updaterar grid
+function draw() {
+  background(255);
+  updateGrid();
+  displayGrid();
+}
+
+//Kontrollera om en kolumn ligger inom gränserna 
+function withinCols(x) {
+  return x >= 0 && x <= cols - 1;
+}
+
+//Kontrollera om en rad ligger inom gränserna
+function withinRows(y) {
+  return y >= 0 && y <= rows - 1;
+}
+
+//skapar en tom grid
+function createEmptyGrid(cols, rows) {
+  const grid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+  return grid;
+}
+
+//updaterar grid och partiklar i den
+function updateGrid() {
+  
+  //om man trycker på knappar skapar man olika partiklar
+  if (mouseIsPressed) {
+    const x = floor(mouseX / cellSize);
+    const y = floor(mouseY / cellSize);
+    if (key === '2') {
+      grid[x][y] = sand; // Sand
+    } else if (key === 'w' || key === '3') {
+      grid[x][y] = water; // vatten
+    } else if (key ===  '1'){
+      grid[x][y] = rock;
+    }else if (key ===  '4'){
+      grid[x][y] = blocks;
+    }
+  }
+  
+   // Sand interaktion med annan sand/luft
+  for (let x = 0; x < cols; x++) {
+    for (let y = rows - 1; y >= 0; y--) {
+      if (grid[x][y] === sand) {
+        if (y < rows - 1 && grid[x][y + 1] === 0) {
+          grid[x][y] = 0;
+          grid[x][y + 1] = sand; // Sand faller (pga luft under)
+        } else {
+          // kollar om sand kan "åka" diagonalt
+          let dir = (random(1) < 0.5) ? -1 : 1;
+          if (withinCols(x + dir) && y < rows - 1 && grid[x + dir][y + 1] === 0) {
+            grid[x][y] = 0;
+            grid[x + dir][y + 1] = sand; // Sand förflyttar sig diagonalt
+          }
+        }
+      }
+    }
+  }
+  
+    // Sand interaktion med vatten o luft
+  //for loop som går igenom det i for loopen och itererar x då det är mindre än cols
+  for (let x = 0; x < cols; x++) {
+    //for loop som går igenom det i for loopen och itererar y då det är mindre än rows
+    for (let y = rows - 1; y >= 0; y--) {
+      if (grid[x][y] === sand) {
+              if (grid[x][y] === sand) {
+        if (y < rows - 1 && grid[x][y + 1] === 0) {
+          grid[x][y] = 0;
+          grid[x][y + 1] = sand; // Sand faller ner
+        }else if (y < rows - 1 && grid[x][y + 1] === water) {
+          if (x < cols - 1 && grid[x + 1][y + 1] === 0 && grid[x + 1][y] !== water) {
+            // Sand trycker vatten höger
+            grid[x][y] = 0;
+            grid[x + 1][y + 1] = sand;
+            grid[x][y + 1] = water; // vattne byter position med sand
+          } else if (x > 0 && grid[x - 1][y + 1] === 0 && grid[x - 1][y] !== water) {
+            // sand puttar vatten vänster
+            grid[x][y] = 0;
+            grid[x - 1][y + 1] = sand;
+            grid[x][y + 1] = water; // sand tar vatten plats
+          }else if (grid[x][y + 1] === water) {
+            grid[x][y] = water;
+            grid[x][y + 1] = sand; // byter plats på sand och vaten i kontakt
+            }
+          } 
+        }
+      }
+    }
+  }
+  
+  //blocks
+  //samma for loop som förut
+  // bildar staplar och sjunker i vatten.
+  for (let x = 0; x < cols; x++) {
+    for (let y = rows - 1; y >= 0; y--) {
+      if (grid[x][y] === blocks) {
+        if (y < rows - 1 && grid[x][y + 1] === 0) {
+          grid[x][y] = 0;
+          grid[x][y + 1] = blocks; // Sand faller ner (gravitation utan acceleration)
+        } else if (y < rows - 1 && grid[x][y + 1] === water) {
+          if (x < cols - 1 && grid[x + 1][y + 1] === 0 && grid[x + 1][y] !== water) {
+            // Sand trycker vatten åt höger
+            grid[x][y] = 0;
+            grid[x + 1][y + 1] = blocks;
+            grid[x][y + 1] = water; // vatten byter plats med sand
+          } else if (x > 0 && grid[x - 1][y + 1] === 0 && grid[x - 1][y] !== water) {
+            // sand trycker vatten åt vänster
+            grid[x][y] = 0;
+            grid[x - 1][y + 1] = blocks;
+            grid[x][y + 1] = water; // vatten tar sandets plats
+          }else {
+            // vatten och sand byter plats (displacement)
+            grid[x][y] = water;
+            grid[x][y + 1] = blocks;
+          }
+        }
+      }
+    }
+  }
+
+  // vatten
+  // typ samma for loop, lite skillnad på variabler och vad som itereras och varför
+  for (let y = rows - 1; y >= 0; y--) {
+    for (let x = 0; x < cols; x++) {
+      if (grid[x][y] === water) {
+        const randomDirection = floor(random(3)); // 0, 1, eller 2
+        if (y < rows - 1 && grid[x][y + 1] === 0) {
+          grid[x][y] = 0;
+          grid[x][y + 1] = water; // vatten ner
+        } else if (randomDirection === 0 && x < cols - 1 && grid[x + 1][y] === 0) {
+          grid[x][y] = 0;
+          grid[x + 1][y] = water; // vatten höger
+        } else if (randomDirection === 1 && x > 0 && grid[x - 1][y] === 0) {
+          grid[x][y] = 0;
+          grid[x - 1][y] = water; // vatten vänster
+        }
+      }
+    }
+  }
+}
+
+//ger allt på grid en färg
+function displayGrid() {
+  stroke(255);
+  
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      const colorMapping = {
+        0: color(255), // tom (vit)
+        1: color(100, 100, 100), // rock (grå)
+        2: color(255, 204, 0), // Sand (gul)
+        3: color(0, 102, 255), // Water (blå)
+        4: color(200, 100, 100) // blocks (orange fast mer röd)
+      };
+      fill(colorMapping[grid[x][y]]);
+      rect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
